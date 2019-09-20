@@ -15,12 +15,17 @@
 
 package dt
 
-import "time"
+import (
+	"database/sql/driver"
+	"fmt"
+	"time"
+)
 
 // A DateTime represents a date and time.
 type DateTime struct {
-	Date Date
-	Time Time
+	Valid bool
+	Date  Date
+	Time  Time
 }
 
 // Note: We deliberately do not embed Date into DateTime, to avoid promoting AddDays and Sub.
@@ -28,10 +33,13 @@ type DateTime struct {
 // DateTimeOf returns the DateTime in which a time occurs in that time's location.
 func DateTimeOf(t time.Time) DateTime {
 	return DateTime{
-		Date: DateOf(t),
-		Time: TimeOf(t),
+		Valid: !t.IsZero(),
+		Date:  DateOf(t),
+		Time:  TimeOf(t),
 	}
 }
+
+var formats = []string{"2006-01-02T15:04", "2006-01-02 15:04:03", "2006-01-02 15:04"}
 
 // ParseDateTime parses a string and returns the DateTime it represents.
 // ParseDateTime accepts a variant of the RFC3339 date-time format that omits
@@ -40,19 +48,26 @@ func DateTimeOf(t time.Time) DateTime {
 //     YYYY-MM-DDTHH:MM:SS[.FFFFFFFFF]
 // where the 'T' may be a lower-case 't'.
 func ParseDateTime(s string) (DateTime, error) {
-	t, err := time.Parse("2006-01-02T15:04:05.999999999", s)
-	if err != nil {
-		t, err = time.Parse("2006-01-02t15:04:05.999999999", s)
-		if err != nil {
-			return DateTime{}, err
+	var t time.Time
+	var err error
+	for _, f := range formats {
+		t, err = time.Parse(f, s)
+		if err == nil {
+			break
 		}
+	}
+	if err != nil {
+		return DateTime{}, err
 	}
 	return DateTimeOf(t), nil
 }
 
 // String returns the date in the format described in ParseDate.
 func (dt DateTime) String() string {
-	return dt.Date.String() + "T" + dt.Time.String()
+	if dt.Valid {
+		return dt.Date.String() + "T" + dt.Time.String()
+	}
+	return ""
 }
 
 // In returns the time corresponding to the DateTime in the given location.
@@ -77,11 +92,6 @@ func (dt DateTime) Before(dt2 DateTime) bool {
 	return dt.In(time.UTC).Before(dt2.In(time.UTC))
 }
 
-// After reports whether dt occurs after dt2.
-func (dt DateTime) After(dt2 DateTime) bool {
-	return dt2.Before(dt)
-}
-
 // MarshalText implements the encoding.TextMarshaler interface.
 // The output is the result of dt.String().
 func (dt DateTime) MarshalText() ([]byte, error) {
@@ -94,4 +104,37 @@ func (dt *DateTime) UnmarshalText(data []byte) error {
 	var err error
 	*dt, err = ParseDateTime(string(data))
 	return err
+}
+
+// Value implements valuer interface
+func (dt DateTime) Value() (driver.Value, error) {
+	if dt.Valid {
+		return driver.Value(dt.String()), nil
+	}
+	return nil, nil
+}
+
+// Scan implements sql scan interface
+func (dt *DateTime) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		pdt, err := ParseDateTime(string(v))
+		if err != nil {
+			return err
+		}
+		*dt = pdt
+		return nil
+	case string:
+		pdt, err := ParseDateTime(v)
+		if err != nil {
+			return err
+		}
+		*dt = pdt
+		return nil
+	}
+	return fmt.Errorf("Can't convert %T to DateTime", value)
 }

@@ -118,6 +118,14 @@ func (d *Date) UnmarshalText(data []byte) error {
 	return err
 }
 
+// Value implements valuer interface
+func (d Date) Value() (driver.Value, error) {
+	if d.Valid {
+		return driver.Value(d.String()), nil
+	}
+	return nil, nil
+}
+
 // Scan implements sql scannner interface
 func (d *Date) Scan(value interface{}) error {
 	if value == nil {
@@ -148,12 +156,4 @@ func (d *Date) Scan(value interface{}) error {
 		return nil
 	}
 	return fmt.Errorf("Can't convert %T to Date", value)
-}
-
-// Value implements valuer interface
-func (d Date) Value() (driver.Value, error) {
-	if d.Valid {
-		return driver.Value(d.String()), nil
-	}
-	return nil, nil
 }

@@ -94,9 +94,6 @@ func (t Time) MarshalText() ([]byte, error) {
 func (t *Time) UnmarshalText(data []byte) error {
 	var err error
 	*t, err = ParseTime(string(data))
-	if err == nil {
-		t.Valid = true
-	}
 	return err
 }
 
@@ -120,7 +117,6 @@ func (t *Time) Scan(value interface{}) error {
 		if err != nil {
 			return err
 		}
-		tm.Valid = true
 		*t = tm
 		return nil
 	case string:
@@ -128,7 +124,6 @@ func (t *Time) Scan(value interface{}) error {
 		if err != nil {
 			return err
 		}
-		tm.Valid = true
 		*t = tm
 		return nil
 	}
