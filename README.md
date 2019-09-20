@@ -13,12 +13,11 @@ dt provides exactly that, a time-zone-independent representation of time that fo
 
 dt provides three types to work with:
 
-- Time: Contains time info in HH:mm
-- Date: Contains date info: (YYYY-MM-DD)
-- DateTime: Contains date and time information (YYYY-MM-DDTHH:mm)
+- Time: Contains time info: HH:mm
+- Date: Contains date info: YYYY-MM-DD
+- DateTime: Contains date and time information: YYYY-MM-DDTHH:mm
 
-Unlike `time.Time` these types contain an additional `Valid` field representing whether the data inside it was scanned.
-This prevents situations like saving default date in database when nothing was received or responding via JSON with default date even though the date was empty.
+Unlike `time.Time` these types contain an additional `Valid` field representing whether the data inside it was scanned/marshalled. This prevents situations like saving default date in database when nothing was received or responding via JSON with default date even though the date was empty.
 
 ## Why not civil package?
 
