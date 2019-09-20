@@ -3,7 +3,7 @@ Go's missing DateTime package
 
 ## Why dt?
 
-Go's standard library contains single date package - `time`. The type provided by it, `Time`, contains date, time and location information.
+Go's standard library contains a single date package - `time`. The type provided by it, `Time`, contains date, time and location information.
 
 More often than not we don't location info, or we need to represent date/time only.
 
@@ -17,15 +17,17 @@ dt provides three types to work with:
 - Date: Contains date info: YYYY-MM-DD
 - DateTime: Contains date and time information: YYYY-MM-DDTHH:mm
 
-Unlike `time.Time` these types contain an additional `Valid` field representing whether the data inside it was scanned/marshalled. This prevents situations like saving default date in database when nothing was received or responding via JSON with default date even though the date was empty.
+Unlike `time.Time` these types contain an additional `Valid` field representing whether the data inside it was scanned/marshaled. This prevents situations like saving default date in a database when nothing was received or responding via JSON with default date even though the date was empty.
+
+Types provided in dt represent sql types `time`, `date` and `timestamp`.
 
 ## Why not civil package?
 
 Google already offers something similar in [civil](https://github.com/googleapis/google-cloud-go/tree/master/civil) package.
 
-- It's not an independent library, but a small package in a very big project which leads to its own problems.
-- It doesn't implement the Scan/Value sql interfaces.
-- It marshalls to zero date/time/datetime which is horrible (`time.Time` does this as well.) You can't differentiate inputed `00:00` and empty value.
+- It's not an independent library, but a small package in a very big project which leads to its problems.
+- It doesn't implement the Scan/Value SQL interfaces.
+- It marshalls to zero date/time/datetime (`time.Time` does this as well.) You can't differentiate inputted zero date/time/datetime and empty value.
 - Slower development cycle
 
 ## License
