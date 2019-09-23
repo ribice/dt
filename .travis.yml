@@ -1,8 +1,8 @@
 language: go
 sudo: required
 go:
-  - tip
-  
+  - "1.13"
+
 script:
   - ./test.sh
 
