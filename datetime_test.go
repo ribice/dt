@@ -17,11 +17,6 @@ func TestDateTimeOf(t *testing.T) {
 			req:  time.Date(2014, 8, 20, 15, 8, 0, 0, time.Local),
 			want: DateTime{Date{2014, 8, 20, true}, Time{15, 8, true}},
 		},
-		{
-			name: "Valid date empty time",
-			req:  time.Date(1, 1, 1, 0, 0, 0, 0, time.Local),
-			want: DateTime{Date{1, 1, 1, true}, Time{0, 0, true}},
-		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
