@@ -23,9 +23,8 @@ import (
 
 // A DateTime represents a date and time.
 type DateTime struct {
-	Valid bool
-	Date  Date
-	Time  Time
+	Date Date
+	Time Time
 }
 
 // Note: We deliberately do not embed Date into DateTime, to avoid promoting AddDays and Sub.
@@ -33,13 +32,12 @@ type DateTime struct {
 // DateTimeOf returns the DateTime in which a time occurs in that time's location.
 func DateTimeOf(t time.Time) DateTime {
 	return DateTime{
-		Valid: !t.IsZero(),
-		Date:  DateOf(t),
-		Time:  TimeOf(t),
+		Date: DateOf(t),
+		Time: TimeOf(t),
 	}
 }
 
-var formats = []string{"2006-01-02T15:04", "2006-01-02 15:04:03", "2006-01-02 15:04"}
+var dtFormats = []string{"2006-01-02T15:04", "2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02 15:04"}
 
 // ParseDateTime parses a string and returns the DateTime it represents.
 // ParseDateTime accepts a variant of the RFC3339 date-time format that omits
@@ -50,12 +48,13 @@ var formats = []string{"2006-01-02T15:04", "2006-01-02 15:04:03", "2006-01-02 15
 func ParseDateTime(s string) (DateTime, error) {
 	var t time.Time
 	var err error
-	for _, f := range formats {
+	for _, f := range dtFormats {
 		t, err = time.Parse(f, s)
 		if err == nil {
 			break
 		}
 	}
+
 	if err != nil {
 		return DateTime{}, err
 	}
@@ -64,7 +63,7 @@ func ParseDateTime(s string) (DateTime, error) {
 
 // String returns the date in the format described in ParseDate.
 func (dt DateTime) String() string {
-	if dt.Valid {
+	if dt.Date.Valid && dt.Time.Valid {
 		return dt.Date.String() + "T" + dt.Time.String()
 	}
 	return ""
@@ -108,7 +107,7 @@ func (dt *DateTime) UnmarshalText(data []byte) error {
 
 // Value implements valuer interface
 func (dt DateTime) Value() (driver.Value, error) {
-	if dt.Valid {
+	if dt.Date.Valid && dt.Time.Valid {
 		return driver.Value(dt.String()), nil
 	}
 	return nil, nil

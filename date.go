@@ -96,8 +96,8 @@ func (d Date) Before(d2 Date) bool {
 	return d.Day < d2.Day
 }
 
-// ToGoTime converts Date to Go time
-func (d Date) ToGoTime() time.Time {
+// ToTime converts Date to Go time
+func (d Date) ToTime() time.Time {
 	return time.Date(d.Year, d.Month, d.Day, 0, 0, 0, 0, time.UTC)
 }
 
@@ -142,13 +142,6 @@ func (d *Date) Scan(value interface{}) error {
 		return nil
 	case string:
 		dt, err := ParseDate(v)
-		if err != nil {
-			return err
-		}
-		*d = dt
-		return nil
-	case uint8:
-		dt, err := ParseDate(string(v))
 		if err != nil {
 			return err
 		}

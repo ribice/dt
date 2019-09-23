@@ -67,7 +67,7 @@ func (t Time) String() string {
 
 // ToDate converts Time into time.Time
 func (t Time) ToDate() time.Time {
-	return time.Date(2, 2, 2, t.Hour, t.Minute, 0, 0, time.UTC)
+	return time.Date(0, 0, 0, t.Hour, t.Minute, 0, 0, time.UTC)
 }
 
 // After checks if instance of t is after tm
