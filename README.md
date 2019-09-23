@@ -1,6 +1,10 @@
 # dt
 Go's missing DateTime package
 
+[![Build Status](https://travis-ci.org/ribice/dt.svg?branch=master)](https://travis-ci.org/ribice/dt)
+[![codecov](https://codecov.io/gh/ribice/dt/branch/master/graph/badge.svg)](https://codecov.io/gh/ribice/dt)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ribice/dt)](https://goreportcard.com/report/github.com/ribice/dt)
+
 ## Why dt?
 
 Go's standard library contains a single date package - `time`. The type provided by it, `Time`, contains date, time and location information.
