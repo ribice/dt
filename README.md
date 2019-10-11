@@ -9,7 +9,7 @@ Go's missing DateTime package
 
 Go's standard library contains a single date package - `time`. The type provided by it, `Time`, contains date, time and location information.
 
-More often than not we don't location info, or we need to represent date/time only.
+More often than not we don't need location info, or we need to represent date/time only.
 
 dt provides exactly that, a time-zone-independent representation of time that follows the rules of the proleptic Gregorian calendar with exactly 24-hour days, 60-minute hours, and 60-second minutes.
 
