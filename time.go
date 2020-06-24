@@ -75,6 +75,9 @@ func (t Time) After(tm Time) bool {
 	if t.Hour > tm.Hour {
 		return true
 	}
+	if t.Hour < tm.Hour{
+		return false
+	}
 	return t.Minute > tm.Minute
 }
 

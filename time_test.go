@@ -114,6 +114,12 @@ func TestAfter(t *testing.T) {
 			t2:      Time{23, 59, true},
 			isAfter: false,
 		},
+		{
+			name:    "Before",
+			t1:      Time{11, 59, true},
+			t2:      Time{23, 59, true},
+			isAfter: false,
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
