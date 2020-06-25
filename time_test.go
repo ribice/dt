@@ -91,13 +91,13 @@ func TestAfter(t *testing.T) {
 		isAfter bool
 	}{
 		{
-			name:    "Hours after",
+			name:    "Hour after",
 			t1:      Time{23, 59, true},
 			t2:      Time{22, 59, true},
 			isAfter: true,
 		},
 		{
-			name:    "Minutes after",
+			name:    "Minute after",
 			t1:      Time{23, 59, true},
 			t2:      Time{23, 45, true},
 			isAfter: true,
@@ -109,13 +109,13 @@ func TestAfter(t *testing.T) {
 			isAfter: false,
 		},
 		{
-			name:    "Before",
-			t1:      Time{23, 59, true},
+			name:    "Hour before",
+			t1:      Time{22, 59, true},
 			t2:      Time{23, 59, true},
 			isAfter: false,
 		},
 		{
-			name:    "Before",
+			name:    "Minute before",
 			t1:      Time{11, 59, true},
 			t2:      Time{23, 59, true},
 			isAfter: false,
@@ -125,6 +125,52 @@ func TestAfter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.t1.After(tt.t2) != tt.isAfter {
 				t.Errorf("expected isAfter %v, got %v", tt.isAfter, tt.t1.After(tt.t2))
+			}
+		})
+	}
+}
+
+func TestBefore(t *testing.T) {
+	cases := []struct {
+		name    string
+		t1, t2  Time
+		isBefore bool
+	}{
+		{
+			name:    "Hour after",
+			t1:      Time{23, 59, true},
+			t2:      Time{22, 59, true},
+			isBefore: false,
+		},
+		{
+			name:    "Minute after",
+			t1:      Time{23, 59, true},
+			t2:      Time{23, 45, true},
+			isBefore: false,
+		},
+		{
+			name:    "Equal",
+			t1:      Time{23, 59, true},
+			t2:      Time{23, 59, true},
+			isBefore: false,
+		},
+		{
+			name:    "Hour before",
+			t1:      Time{22, 59, true},
+			t2:      Time{23, 59, true},
+			isBefore: true,
+		},
+		{
+			name:    "Minute before",
+			t1:      Time{11, 59, true},
+			t2:      Time{23, 59, true},
+			isBefore: true,
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.t1.Before(tt.t2) != tt.isBefore {
+				t.Errorf("expected isBefore %v, got %v", tt.isBefore, tt.t1.Before(tt.t2))
 			}
 		})
 	}

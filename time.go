@@ -72,13 +72,18 @@ func (t Time) ToDate() time.Time {
 
 // After checks if instance of t is after tm
 func (t Time) After(tm Time) bool {
-	if t.Hour > tm.Hour {
-		return true
+	if t.Hour == tm.Hour{
+		return t.Minute > tm.Minute
 	}
-	if t.Hour < tm.Hour{
-		return false
+	return t.Hour > tm.Hour
+}
+
+// After checks if instance of t is before tm
+func (t Time) Before(tm Time) bool {
+	if t.Hour == tm.Hour{
+		return t.Minute < tm.Minute
 	}
-	return t.Minute > tm.Minute
+	return t.Hour < tm.Hour
 }
 
 // Subtract returns difference between t and t2 in minutes
