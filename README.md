@@ -40,4 +40,4 @@ dt is licensed under the Apache2 license. Check the [LICENSE](LICENSE) file for 
 
 ## Author
 
-[Emir Ribic](https://ribice.ba)
+[Emir Ribic](https://dev.ribic.ba)
