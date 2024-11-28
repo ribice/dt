@@ -1,7 +1,7 @@
 language: go
 sudo: required
 go:
-  - "1.13"
+  - "1.23"
 
 script:
   - ./test.sh
