@@ -212,6 +212,21 @@ func TestDateBefore(t *testing.T) {
 	}
 }
 
+func TestDateAfter(t *testing.T) {
+	for _, test := range []struct {
+		d1, d2 Date
+		want   bool
+	}{
+		{Date{2016, 12, 31, true}, Date{2017, 1, 1, true}, false},
+		{Date{2016, 1, 1, true}, Date{2016, 1, 1, true}, false},
+		{Date{2016, 12, 30, true}, Date{2016, 12, 31, true}, false},
+	} {
+		if got := test.d1.After(test.d2); got != test.want {
+			t.Errorf("%v.After(%v): got %t, want %t", test.d1, test.d2, got, test.want)
+		}
+	}
+}
+
 func TestToGoTime(t *testing.T) {
 	d := Date{2016, 12, 31, true}
 	goTime := d.ToTime()
@@ -340,5 +355,20 @@ func TestScanDate(t *testing.T) {
 				t.Errorf("expected %v, got %v", tt.want, *d)
 			}
 		})
+	}
+}
+
+func TestDateCompare(t *testing.T) {
+	for _, test := range []struct {
+		d1, d2 Date
+		want   int
+	}{
+		{Date{2016, 12, 31, true}, Date{2017, 1, 1, true}, -1},
+		{Date{2016, 1, 1, true}, Date{2016, 1, 1, true}, 0},
+		{Date{2016, 12, 31, true}, Date{2016, 12, 30, true}, +1},
+	} {
+		if got := test.d1.Compare(test.d2); got != test.want {
+			t.Errorf("%v.Compare(%v): got %d, want %d", test.d1, test.d2, got, test.want)
+		}
 	}
 }

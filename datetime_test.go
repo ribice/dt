@@ -260,3 +260,24 @@ func TestScanDateTime(t *testing.T) {
 		})
 	}
 }
+
+func TestDateTimeCompare(t *testing.T) {
+	d1 := Date{2016, 12, 31, true}
+	d2 := Date{2017, 1, 1, true}
+	t1 := Time{5, 6, true}
+	t2 := Time{5, 7, true}
+	for _, test := range []struct {
+		dt1, dt2 DateTime
+		want     int
+	}{
+		{DateTime{d1, t1}, DateTime{d2, t1}, -1},
+		{DateTime{d1, t1}, DateTime{d1, t2}, -1},
+		{DateTime{d2, t1}, DateTime{d1, t1}, +1},
+		{DateTime{d1, t2}, DateTime{d1, t1}, +1},
+		{DateTime{d2, t1}, DateTime{d2, t1}, 0},
+	} {
+		if got := test.dt1.Compare(test.dt2); got != test.want {
+			t.Errorf("%v.Compare(%v): got %d, want %d", test.dt1, test.dt2, got, test.want)
+		}
+	}
+}

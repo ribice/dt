@@ -60,9 +60,13 @@ func (d Date) String() string {
 //
 // In is always consistent with time.Date, even when time.Date returns a time
 // on a different day. For example, if loc is America/Indiana/Vincennes, then both
-//     time.Date(1955, time.May, 1, 0, 0, 0, 0, loc)
+//
+//	time.Date(1955, time.May, 1, 0, 0, 0, 0, loc)
+//
 // and
-//     dt.Date{Year: 1955, Month: time.May, Day: 1}.In(loc)
+//
+//	dt.Date{Year: 1955, Month: time.May, Day: 1}.In(loc)
+//
 // return 23:00:00 on April 30, 1955.
 //
 // In panics if loc is nil.
@@ -94,6 +98,17 @@ func (d Date) Before(d2 Date) bool {
 		return d.Month < d2.Month
 	}
 	return d.Day < d2.Day
+}
+
+// After reports whether d1 occurs after d2.
+func (d Date) After(d2 Date) bool {
+	if d.Year != d2.Year {
+		return d.Year > d2.Year
+	}
+	if d.Month != d2.Month {
+		return d.Month > d2.Month
+	}
+	return d.Day > d2.Day
 }
 
 // ToTime converts Date to Go time
@@ -149,4 +164,18 @@ func (d *Date) Scan(value interface{}) error {
 		return nil
 	}
 	return fmt.Errorf("Can't convert %T to Date", value)
+}
+
+// Compare compares d and d2. If d is before d2, it returns -1;
+// if d is after d2, it returns +1; otherwise it returns 0.
+func (d Date) Compare(d2 Date) int {
+	if d.Before(d2) {
+		return -1
+	}
+
+	if d2.Before(d) {
+		return 1
+	}
+
+	return 0
 }

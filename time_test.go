@@ -132,38 +132,38 @@ func TestAfter(t *testing.T) {
 
 func TestBefore(t *testing.T) {
 	cases := []struct {
-		name    string
-		t1, t2  Time
+		name     string
+		t1, t2   Time
 		isBefore bool
 	}{
 		{
-			name:    "Hour after",
-			t1:      Time{23, 59, true},
-			t2:      Time{22, 59, true},
+			name:     "Hour after",
+			t1:       Time{23, 59, true},
+			t2:       Time{22, 59, true},
 			isBefore: false,
 		},
 		{
-			name:    "Minute after",
-			t1:      Time{23, 59, true},
-			t2:      Time{23, 45, true},
+			name:     "Minute after",
+			t1:       Time{23, 59, true},
+			t2:       Time{23, 45, true},
 			isBefore: false,
 		},
 		{
-			name:    "Equal",
-			t1:      Time{23, 59, true},
-			t2:      Time{23, 59, true},
+			name:     "Equal",
+			t1:       Time{23, 59, true},
+			t2:       Time{23, 59, true},
 			isBefore: false,
 		},
 		{
-			name:    "Hour before",
-			t1:      Time{22, 59, true},
-			t2:      Time{23, 59, true},
+			name:     "Hour before",
+			t1:       Time{22, 59, true},
+			t2:       Time{23, 59, true},
 			isBefore: true,
 		},
 		{
-			name:    "Minute before",
-			t1:      Time{11, 59, true},
-			t2:      Time{23, 59, true},
+			name:     "Minute before",
+			t1:       Time{11, 59, true},
+			t2:       Time{23, 59, true},
 			isBefore: true,
 		},
 	}
@@ -334,5 +334,22 @@ func TestScanTime(t *testing.T) {
 				t.Errorf("expected %v, got %v", tt.want, *tm)
 			}
 		})
+	}
+}
+
+func TestTimeCompare(t *testing.T) {
+	for _, test := range []struct {
+		t1, t2 Time
+		want   int
+	}{
+		{Time{12, 0, true}, Time{14, 0, true}, -1},
+		{Time{12, 20, true}, Time{12, 30, true}, -1},
+		{Time{14, 0, true}, Time{12, 0, true}, +1},
+		{Time{12, 30, true}, Time{12, 20, true}, +1},
+		{Time{12, 20, true}, Time{12, 20, true}, 0},
+	} {
+		if got := test.t1.Compare(test.t2); got != test.want {
+			t.Errorf("%v.Compare(%v): got %d, want %d", test.t1, test.t2, got, test.want)
+		}
 	}
 }

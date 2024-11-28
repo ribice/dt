@@ -72,7 +72,7 @@ func (t Time) ToDate() time.Time {
 
 // After checks if instance of t is after tm
 func (t Time) After(tm Time) bool {
-	if t.Hour == tm.Hour{
+	if t.Hour == tm.Hour {
 		return t.Minute > tm.Minute
 	}
 	return t.Hour > tm.Hour
@@ -80,7 +80,7 @@ func (t Time) After(tm Time) bool {
 
 // After checks if instance of t is before tm
 func (t Time) Before(tm Time) bool {
-	if t.Hour == tm.Hour{
+	if t.Hour == tm.Hour {
 		return t.Minute < tm.Minute
 	}
 	return t.Hour < tm.Hour
@@ -136,4 +136,17 @@ func (t *Time) Scan(value interface{}) error {
 		return nil
 	}
 	return fmt.Errorf("Can't convert %T to Time", value)
+}
+
+// Compare compares t and t2. If t is before t2, it returns -1;
+// if t is after t2, it returns +1; otherwise it returns 0.
+func (t Time) Compare(t2 Time) int {
+	if t.Before(t2) {
+		return -1
+	}
+
+	if t.After(t2) {
+		return +1
+	}
+	return 0
 }

@@ -43,7 +43,9 @@ var dtFormats = []string{"2006-01-02T15:04", "2006-01-02T15:04:05", "2006-01-02 
 // ParseDateTime accepts a variant of the RFC3339 date-time format that omits
 // the time offset but includes an optional fractional time, as described in
 // ParseTime. Informally, the accepted format is
-//     YYYY-MM-DDTHH:MM:SS[.FFFFFFFFF]
+//
+//	YYYY-MM-DDTHH:MM:SS[.FFFFFFFFF]
+//
 // where the 'T' may be a lower-case 't'.
 func ParseDateTime(s string) (DateTime, error) {
 	var t time.Time
@@ -74,11 +76,15 @@ func (dt DateTime) String() string {
 // If the time is missing or ambigous at the location, In returns the same
 // result as time.Date. For example, if loc is America/Indiana/Vincennes, then
 // both
-//     time.Date(1955, time.May, 1, 0, 30, 0, 0, loc)
+//
+//	time.Date(1955, time.May, 1, 0, 30, 0, 0, loc)
+//
 // and
-//     dt.DateTime{
-//         dt.Date{Year: 1955, Month: time.May, Day: 1}},
-//         dt.Time{Minute: 30}}.In(loc)
+//
+//	dt.DateTime{
+//	    dt.Date{Year: 1955, Month: time.May, Day: 1}},
+//	    dt.Time{Minute: 30}}.In(loc)
+//
 // return 23:30:00 on April 30, 1955.
 //
 // In panics if loc is nil.
@@ -119,21 +125,26 @@ func (dt *DateTime) Scan(value interface{}) error {
 		return nil
 	}
 
+	var str string
 	switch v := value.(type) {
 	case []byte:
-		pdt, err := ParseDateTime(string(v))
-		if err != nil {
-			return err
-		}
-		*dt = pdt
-		return nil
+		str = string(v)
 	case string:
-		pdt, err := ParseDateTime(v)
-		if err != nil {
-			return err
-		}
-		*dt = pdt
-		return nil
+		str = v
+	default:
+		return fmt.Errorf("Can't convert %T to DateTime", value)
 	}
-	return fmt.Errorf("Can't convert %T to DateTime", value)
+
+	pdt, err := ParseDateTime(str)
+	if err == nil {
+		*dt = pdt
+	}
+
+	return err
+}
+
+// Compare compares dt and dt2. If dt is before dt2, it returns -1;
+// if dt is after dt2, it returns +1; otherwise it returns 0.
+func (dt DateTime) Compare(dt2 DateTime) int {
+	return dt.In(time.UTC).Compare(dt2.In(time.UTC))
 }
