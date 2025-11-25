@@ -229,13 +229,15 @@ type timeReq struct {
 
 func TestUnmarshalTime(t *testing.T) {
 	cases := []struct {
-		name string
-		req  []byte
-		want Time
+		name    string
+		req     []byte
+		want    Time
+		wantErr bool
 	}{
 		{
-			name: "Invalid date",
-			req:  []byte(`"date":"ABCD"`),
+			name:    "Invalid date",
+			req:     []byte(`"date":"ABCD"`),
+			wantErr: true,
 		},
 		{
 			name: "Valid date",
@@ -247,18 +249,39 @@ func TestUnmarshalTime(t *testing.T) {
 			req:  []byte(`{"time":"15:25:35"}`),
 			want: Time{15, 25, true},
 		},
+		{
+			name: "Null time",
+			req:  []byte(`{"time":null}`),
+			want: Time{},
+		},
+		{
+			name: "Empty string time",
+			req:  []byte(`{"time":""}`),
+			want: Time{},
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			var tm timeReq
 			err := json.Unmarshal(tt.req, &tm)
-			if (err == nil) != tt.want.Valid {
-				t.Errorf("expected time to be empty, got err: %v", err)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("expected error=%t, got err: %v", tt.wantErr, err)
 			}
 			if tm.T != tt.want {
 				t.Errorf("expected time %v, got %v", tt.want, tm)
 			}
 		})
+	}
+}
+
+func TestMarshalTimeNull(t *testing.T) {
+	tm := Time{}
+	bts, err := json.Marshal(tm)
+	if err != nil {
+		t.Errorf("expected success but got error: %v", err)
+	}
+	if string(bts) != "null" {
+		t.Errorf("expected null but got %s", string(bts))
 	}
 }
 
@@ -318,6 +341,11 @@ func TestScanTime(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:  "Time.Time value",
+			value: time.Date(2019, 7, 15, 14, 30, 0, 0, time.UTC),
+			want:  Time{14, 30, true},
+		},
+		{
 			name:    "Invalid type",
 			value:   8,
 			wantErr: true,
@@ -350,6 +378,22 @@ func TestTimeCompare(t *testing.T) {
 	} {
 		if got := test.t1.Compare(test.t2); got != test.want {
 			t.Errorf("%v.Compare(%v): got %d, want %d", test.t1, test.t2, got, test.want)
+		}
+	}
+}
+
+func TestTimeEqual(t *testing.T) {
+	for _, test := range []struct {
+		t1, t2 Time
+		want   bool
+	}{
+		{Time{12, 0, true}, Time{14, 0, true}, false},
+		{Time{12, 20, true}, Time{12, 20, true}, true},
+		{Time{12, 20, true}, Time{12, 20, false}, false},
+		{Time{12, 20, false}, Time{12, 20, false}, true},
+	} {
+		if got := test.t1.Equal(test.t2); got != test.want {
+			t.Errorf("%v.Equal(%v): got %t, want %t", test.t1, test.t2, got, test.want)
 		}
 	}
 }

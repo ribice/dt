@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-// A Time represents a time with nanosecond precision.
+// A Time represents a time of day (hour and minute).
 //
 // This type does not include location information, and therefore does not
 // describe a unique moment in time.
@@ -72,13 +72,15 @@ func (t Time) ToDate() time.Time {
 
 // After checks if instance of t is after tm
 func (t Time) After(tm Time) bool {
-	if t.Hour == tm.Hour {
-		return t.Minute > tm.Minute
-	}
-	return t.Hour > tm.Hour
+	return tm.Before(t)
 }
 
-// After checks if instance of t is before tm
+// Equal reports whether t equals tm.
+func (t Time) Equal(tm Time) bool {
+	return t.Hour == tm.Hour && t.Minute == tm.Minute && t.Valid == tm.Valid
+}
+
+// Before checks if instance of t is before tm
 func (t Time) Before(tm Time) bool {
 	if t.Hour == tm.Hour {
 		return t.Minute < tm.Minute
@@ -102,7 +104,39 @@ func (t Time) MarshalText() ([]byte, error) {
 func (t *Time) UnmarshalText(data []byte) error {
 	var err error
 	*t, err = ParseTime(string(data))
+	if err == nil {
+		t.Valid = true
+	}
 	return err
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+// The output is a JSON string in HH:MM format, or null if Valid is false.
+func (t Time) MarshalJSON() ([]byte, error) {
+	if !t.Valid {
+		return []byte("null"), nil
+	}
+	return fmt.Appendf([]byte{}, "%q", t.String()), nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// The time is expected to be a JSON string in a format accepted by ParseTime,
+// or null/empty string for an invalid time.
+func (t *Time) UnmarshalJSON(data []byte) (err error) {
+	if string(data) == "null" || string(data) == `""` {
+		*t = Time{}
+		return
+	}
+	// Strip quotes from JSON string data
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+	*t, err = ParseTime(s)
+	if err == nil {
+		t.Valid = true
+	}
+	return
 }
 
 // Value implements valuer interface
@@ -110,16 +144,20 @@ func (t Time) Value() (driver.Value, error) {
 	if t.Valid {
 		return driver.Value(t.String()), nil
 	}
+	//nolint:nilnil
 	return nil, nil
 }
 
 // Scan implements sql scan interface
-func (t *Time) Scan(value interface{}) error {
+func (t *Time) Scan(value any) error {
 	if value == nil {
 		return nil
 	}
 
 	switch v := value.(type) {
+	case time.Time:
+		*t = TimeOf(v)
+		return nil
 	case []byte:
 		tm, err := ParseTime(string(v))
 		if err != nil {
@@ -135,7 +173,7 @@ func (t *Time) Scan(value interface{}) error {
 		*t = tm
 		return nil
 	}
-	return fmt.Errorf("Can't convert %T to Time", value)
+	return fmt.Errorf("can't convert %T to Time", value)
 }
 
 // Compare compares t and t2. If t is before t2, it returns -1;

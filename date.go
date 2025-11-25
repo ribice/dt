@@ -100,15 +100,14 @@ func (d Date) Before(d2 Date) bool {
 	return d.Day < d2.Day
 }
 
-// After reports whether d1 occurs after d2.
+// After reports whether d occurs after d2.
 func (d Date) After(d2 Date) bool {
-	if d.Year != d2.Year {
-		return d.Year > d2.Year
-	}
-	if d.Month != d2.Month {
-		return d.Month > d2.Month
-	}
-	return d.Day > d2.Day
+	return d2.Before(d)
+}
+
+// Equal reports whether d equals d2.
+func (d Date) Equal(d2 Date) bool {
+	return d.Year == d2.Year && d.Month == d2.Month && d.Day == d2.Day && d.Valid == d2.Valid
 }
 
 // ToTime converts Date to Go time
@@ -133,21 +132,54 @@ func (d *Date) UnmarshalText(data []byte) error {
 	return err
 }
 
+// MarshalJSON implements the json.Marshaler interface.
+// The output is a JSON string in RFC3339 full-date format, or null if Valid is false.
+func (d Date) MarshalJSON() ([]byte, error) {
+	if !d.Valid {
+		return []byte("null"), nil
+	}
+	return fmt.Appendf([]byte{}, "%q", d.String()), nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// The date is expected to be a JSON string in a format accepted by ParseDate,
+// or null/empty string for an invalid date.
+func (d *Date) UnmarshalJSON(data []byte) (err error) {
+	if string(data) == "null" || string(data) == `""` {
+		*d = Date{}
+		return
+	}
+	// Strip quotes from JSON string data
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+	*d, err = ParseDate(s)
+	if err == nil {
+		d.Valid = true
+	}
+	return
+}
+
 // Value implements valuer interface
 func (d Date) Value() (driver.Value, error) {
 	if d.Valid {
 		return driver.Value(d.String()), nil
 	}
+	//nolint:nilnil
 	return nil, nil
 }
 
 // Scan implements sql scannner interface
-func (d *Date) Scan(value interface{}) error {
+func (d *Date) Scan(value any) error {
 	if value == nil {
 		*d = Date{}
 		return nil
 	}
 	switch v := value.(type) {
+	case time.Time:
+		*d = DateOf(v)
+		return nil
 	case []byte:
 		dt, err := ParseDate(string(v))
 		if err != nil {
@@ -163,7 +195,7 @@ func (d *Date) Scan(value interface{}) error {
 		*d = dt
 		return nil
 	}
-	return fmt.Errorf("Can't convert %T to Date", value)
+	return fmt.Errorf("can't convert %T to Date", value)
 }
 
 // Compare compares d and d2. If d is before d2, it returns -1;
@@ -178,4 +210,44 @@ func (d Date) Compare(d2 Date) int {
 	}
 
 	return 0
+}
+
+// AddWorkingDays adds the specified number of working days (excluding weekends) to the date.
+// Working days are Monday through Friday. Weekends (Saturday and Sunday) are skipped.
+func (d Date) AddWorkingDays(workingDays int) Date {
+	if workingDays == 0 {
+		return d
+	}
+
+	current := d.In(time.UTC)
+	daysToAdd := workingDays
+	direction := 1
+
+	if workingDays < 0 {
+		direction = -1
+		daysToAdd = -workingDays
+	}
+
+	for daysToAdd > 0 {
+		current = current.AddDate(0, 0, direction)
+		weekday := current.Weekday()
+		// Skip weekends (Saturday = 6, Sunday = 0)
+		if weekday != time.Saturday && weekday != time.Sunday {
+			daysToAdd--
+		}
+	}
+
+	return DateOf(current)
+}
+
+// CalculateDeadlineFromDueIn calculates a deadline date from the number of working days.
+// Returns nil if dueIn is nil or <= 0.
+func CalculateDeadlineFromDueIn(dueIn *int) *Date {
+	if dueIn == nil || *dueIn <= 0 {
+		return nil
+	}
+
+	today := DateOf(time.Now().UTC())
+	deadline := today.AddWorkingDays(*dueIn)
+	return &deadline
 }

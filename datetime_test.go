@@ -127,6 +127,47 @@ func TestDateTimeBefore(t *testing.T) {
 	}
 }
 
+func TestDateTimeAfter(t *testing.T) {
+	d1 := Date{2016, 12, 31, true}
+	d2 := Date{2017, 1, 1, true}
+	t1 := Time{5, 6, true}
+	t2 := Time{5, 7, true}
+	for _, test := range []struct {
+		dt1, dt2 DateTime
+		want     bool
+	}{
+		{DateTime{d1, t1}, DateTime{d2, t1}, false},
+		{DateTime{d1, t1}, DateTime{d1, t2}, false},
+		{DateTime{d2, t1}, DateTime{d1, t1}, true},
+		{DateTime{d2, t1}, DateTime{d2, t1}, false},
+		{DateTime{d1, t2}, DateTime{d1, t1}, true},
+	} {
+		if got := test.dt1.After(test.dt2); got != test.want {
+			t.Errorf("%v.After(%v): got %t, want %t", test.dt1, test.dt2, got, test.want)
+		}
+	}
+}
+
+func TestDateTimeEqual(t *testing.T) {
+	d1 := Date{2016, 12, 31, true}
+	d2 := Date{2017, 1, 1, true}
+	t1 := Time{5, 6, true}
+	t2 := Time{5, 7, true}
+	for _, test := range []struct {
+		dt1, dt2 DateTime
+		want     bool
+	}{
+		{DateTime{d1, t1}, DateTime{d2, t1}, false},
+		{DateTime{d1, t1}, DateTime{d1, t2}, false},
+		{DateTime{d1, t1}, DateTime{d1, t1}, true},
+		{DateTime{d2, t1}, DateTime{d2, t1}, true},
+	} {
+		if got := test.dt1.Equal(test.dt2); got != test.want {
+			t.Errorf("%v.Equal(%v): got %t, want %t", test.dt1, test.dt2, got, test.want)
+		}
+	}
+}
+
 func TestMarshalDateTime(t *testing.T) {
 	dt := DateTime{Date{2014, 8, 20, true}, Time{15, 8, true}}
 	bts, err := json.Marshal(dt)
@@ -162,6 +203,16 @@ func TestUnmarshalDateTime(t *testing.T) {
 			req:  []byte(`{"date_time":"2019-11-04 15:35"}`),
 			want: DateTime{Date{2019, 11, 4, true}, Time{15, 35, true}},
 		},
+		{
+			name: "Null datetime",
+			req:  []byte(`{"date_time":null}`),
+			want: DateTime{},
+		},
+		{
+			name: "Empty string datetime",
+			req:  []byte(`{"date_time":""}`),
+			want: DateTime{},
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -175,6 +226,17 @@ func TestUnmarshalDateTime(t *testing.T) {
 				t.Errorf("expected dateTime %v, got %v", tt.want, dateTime)
 			}
 		})
+	}
+}
+
+func TestMarshalDateTimeNull(t *testing.T) {
+	dt := DateTime{}
+	bts, err := json.Marshal(dt)
+	if err != nil {
+		t.Errorf("expected success but got error: %v", err)
+	}
+	if string(bts) != "null" {
+		t.Errorf("expected null but got %s", string(bts))
 	}
 }
 
@@ -240,6 +302,11 @@ func TestScanDateTime(t *testing.T) {
 			name:    "String error",
 			value:   "2019-21-41",
 			wantErr: true,
+		},
+		{
+			name:  "Time.Time value",
+			value: time.Date(2019, 12, 31, 15, 35, 0, 0, time.UTC),
+			want:  DateTime{Time: Time{15, 35, true}, Date: Date{2019, 12, 31, true}},
 		},
 		{
 			name:    "Invalid type",

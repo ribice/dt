@@ -97,6 +97,16 @@ func (dt DateTime) Before(dt2 DateTime) bool {
 	return dt.In(time.UTC).Before(dt2.In(time.UTC))
 }
 
+// After reports whether dt occurs after dt2.
+func (dt DateTime) After(dt2 DateTime) bool {
+	return dt2.Before(dt)
+}
+
+// Equal reports whether dt equals dt2.
+func (dt DateTime) Equal(dt2 DateTime) bool {
+	return dt.Date.Equal(dt2.Date) && dt.Time.Equal(dt2.Time)
+}
+
 // MarshalText implements the encoding.TextMarshaler interface.
 // The output is the result of dt.String().
 func (dt DateTime) MarshalText() ([]byte, error) {
@@ -111,36 +121,71 @@ func (dt *DateTime) UnmarshalText(data []byte) error {
 	return err
 }
 
+// MarshalJSON implements the json.Marshaler interface.
+// The output is a JSON string in YYYY-MM-DDTHH:MM format, or null if Date or Time is invalid.
+func (dt DateTime) MarshalJSON() ([]byte, error) {
+	if !dt.Date.Valid || !dt.Time.Valid {
+		return []byte("null"), nil
+	}
+	return fmt.Appendf([]byte{}, "%q", dt.String()), nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// The datetime is expected to be a JSON string in a format accepted by ParseDateTime,
+// or null/empty string for an invalid datetime.
+func (dt *DateTime) UnmarshalJSON(data []byte) (err error) {
+	if string(data) == "null" || string(data) == `""` {
+		*dt = DateTime{}
+		return
+	}
+	// Strip quotes from JSON string data
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+	*dt, err = ParseDateTime(s)
+	if err == nil {
+		dt.Date.Valid = true
+		dt.Time.Valid = true
+	}
+	return
+}
+
 // Value implements valuer interface
 func (dt DateTime) Value() (driver.Value, error) {
 	if dt.Date.Valid && dt.Time.Valid {
 		return driver.Value(dt.String()), nil
 	}
+	//nolint:nilnil
 	return nil, nil
 }
 
 // Scan implements sql scan interface
-func (dt *DateTime) Scan(value interface{}) error {
+func (dt *DateTime) Scan(value any) error {
 	if value == nil {
 		return nil
 	}
 
-	var str string
 	switch v := value.(type) {
+	case time.Time:
+		*dt = DateTimeOf(v)
+		return nil
 	case []byte:
-		str = string(v)
+		str := string(v)
+		pdt, err := ParseDateTime(str)
+		if err == nil {
+			*dt = pdt
+		}
+		return err
 	case string:
-		str = v
+		pdt, err := ParseDateTime(v)
+		if err == nil {
+			*dt = pdt
+		}
+		return err
 	default:
-		return fmt.Errorf("Can't convert %T to DateTime", value)
+		return fmt.Errorf("can't convert %T to DateTime", value)
 	}
-
-	pdt, err := ParseDateTime(str)
-	if err == nil {
-		*dt = pdt
-	}
-
-	return err
 }
 
 // Compare compares dt and dt2. If dt is before dt2, it returns -1;

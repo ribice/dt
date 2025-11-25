@@ -255,31 +255,54 @@ type dateReq struct {
 
 func TestUnmarshalDate(t *testing.T) {
 	cases := []struct {
-		name string
-		req  []byte
-		want Date
+		name    string
+		req     []byte
+		want    Date
+		wantErr bool
 	}{
 		{
-			name: "Invalid date",
-			req:  []byte(`"date":"ABCD"`),
+			name:    "Invalid date",
+			req:     []byte(`"date":"ABCD"`),
+			wantErr: true,
 		},
 		{
 			name: "Valid date",
 			req:  []byte(`{"date":"2019-11-04"}`),
 			want: Date{2019, 11, 04, true},
 		},
+		{
+			name: "Null date",
+			req:  []byte(`{"date":null}`),
+			want: Date{},
+		},
+		{
+			name: "Empty string date",
+			req:  []byte(`{"date":""}`),
+			want: Date{},
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			var date dateReq
 			err := json.Unmarshal(tt.req, &date)
-			if (err == nil) != tt.want.Valid {
-				t.Errorf("expected date to be empty, got err: %v", err)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("expected error=%t, got err: %v", tt.wantErr, err)
 			}
 			if date.D != tt.want {
 				t.Errorf("expected date %v, got %v", tt.want, date)
 			}
 		})
+	}
+}
+
+func TestMarshalDateNull(t *testing.T) {
+	d := Date{}
+	bts, err := json.Marshal(d)
+	if err != nil {
+		t.Errorf("expected success but got error: %v", err)
+	}
+	if string(bts) != "null" {
+		t.Errorf("expected null but got %s", string(bts))
 	}
 }
 
@@ -339,6 +362,11 @@ func TestScanDate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:  "Time.Time value",
+			value: time.Date(2019, 7, 15, 14, 30, 0, 0, time.UTC),
+			want:  Date{2019, 07, 15, true},
+		},
+		{
 			name:    "Invalid type",
 			value:   8,
 			wantErr: true,
@@ -371,4 +399,112 @@ func TestDateCompare(t *testing.T) {
 			t.Errorf("%v.Compare(%v): got %d, want %d", test.d1, test.d2, got, test.want)
 		}
 	}
+}
+
+func TestDateEqual(t *testing.T) {
+	for _, test := range []struct {
+		d1, d2 Date
+		want   bool
+	}{
+		{Date{2016, 12, 31, true}, Date{2017, 1, 1, true}, false},
+		{Date{2016, 1, 1, true}, Date{2016, 1, 1, true}, true},
+		{Date{2016, 12, 31, true}, Date{2016, 12, 31, false}, false},
+		{Date{2016, 12, 31, false}, Date{2016, 12, 31, false}, true},
+	} {
+		if got := test.d1.Equal(test.d2); got != test.want {
+			t.Errorf("%v.Equal(%v): got %t, want %t", test.d1, test.d2, got, test.want)
+		}
+	}
+}
+
+func TestAddWorkingDays(t *testing.T) {
+	cases := []struct {
+		name        string
+		start       Date
+		workingDays int
+		want        Date
+	}{
+		{
+			name:        "Zero days",
+			start:       Date{2024, 1, 15, true}, // Monday
+			workingDays: 0,
+			want:        Date{2024, 1, 15, true},
+		},
+		{
+			name:        "Add 1 working day from Monday",
+			start:       Date{2024, 1, 15, true}, // Monday
+			workingDays: 1,
+			want:        Date{2024, 1, 16, true}, // Tuesday
+		},
+		{
+			name:        "Add 5 working days from Monday",
+			start:       Date{2024, 1, 15, true}, // Monday
+			workingDays: 5,
+			want:        Date{2024, 1, 22, true}, // Next Monday
+		},
+		{
+			name:        "Add 1 working day from Friday",
+			start:       Date{2024, 1, 19, true}, // Friday
+			workingDays: 1,
+			want:        Date{2024, 1, 22, true}, // Monday (skip weekend)
+		},
+		{
+			name:        "Subtract 1 working day from Monday",
+			start:       Date{2024, 1, 15, true}, // Monday
+			workingDays: -1,
+			want:        Date{2024, 1, 12, true}, // Friday (skip weekend)
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.start.AddWorkingDays(tt.workingDays)
+			if got != tt.want {
+				t.Errorf("AddWorkingDays(%d) = %v, want %v", tt.workingDays, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCalculateDeadlineFromDueIn(t *testing.T) {
+	cases := []struct {
+		name   string
+		dueIn  *int
+		wantNil bool
+	}{
+		{
+			name:    "Nil dueIn",
+			dueIn:   nil,
+			wantNil: true,
+		},
+		{
+			name:    "Zero dueIn",
+			dueIn:   intPtr(0),
+			wantNil: true,
+		},
+		{
+			name:    "Negative dueIn",
+			dueIn:   intPtr(-1),
+			wantNil: true,
+		},
+		{
+			name:    "Positive dueIn",
+			dueIn:   intPtr(5),
+			wantNil: false,
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CalculateDeadlineFromDueIn(tt.dueIn)
+			if (got == nil) != tt.wantNil {
+				t.Errorf("CalculateDeadlineFromDueIn(%v) = %v, want nil=%t", tt.dueIn, got, tt.wantNil)
+			}
+			if got != nil && !got.Valid {
+				t.Errorf("CalculateDeadlineFromDueIn(%v) returned invalid date", tt.dueIn)
+			}
+		})
+	}
+}
+
+func intPtr(i int) *int {
+	return &i
 }
